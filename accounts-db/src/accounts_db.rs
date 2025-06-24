@@ -1370,7 +1370,7 @@ pub struct AccountsDb {
 }
 
 pub fn quarter_thread_count() -> usize {
-    std::cmp::max(2, num_cpus::get() / 4)
+    1
 }
 
 /// Returns the default number of threads to use for background accounts hashing
