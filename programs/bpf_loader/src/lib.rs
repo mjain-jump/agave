@@ -1459,7 +1459,7 @@ fn execute<'a, 'b: 'a>(
     #[cfg(any(target_os = "windows", not(target_arch = "x86_64")))]
     let use_jit = false;
     #[cfg(all(not(target_os = "windows"), target_arch = "x86_64"))]
-    let use_jit = false;
+    let use_jit = executable.get_compiled_program().is_some();
     let stricter_abi_and_runtime_constraints = invoke_context
         .get_feature_set()
         .stricter_abi_and_runtime_constraints;
@@ -1554,7 +1554,7 @@ fn execute<'a, 'b: 'a>(
                     // remaining compute units so that the block cost
                     // tracker uses the full requested compute unit cost for
                     // this failed transaction.
-                    // invoke_context.consume(invoke_context.get_remaining());
+                    invoke_context.consume(invoke_context.get_remaining());
                 }
 
                 if stricter_abi_and_runtime_constraints {
