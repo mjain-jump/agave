@@ -5,9 +5,6 @@
 
 #![allow(clippy::missing_safety_doc)]
 
-pub mod program_cache;
-pub mod sysvar_cache;
-
 use {
     agave_precompiles::{get_precompile, is_precompile},
     solana_account::AccountSharedData,

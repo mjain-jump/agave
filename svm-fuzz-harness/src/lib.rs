@@ -1,3 +1,6 @@
+pub mod program_cache;
+pub mod sysvar_cache;
+
 use {
     prost::Message,
     solana_svm_fuzz_harness_fixture::proto::InstrContext as ProtoInstrContext,

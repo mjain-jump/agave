@@ -1459,7 +1459,7 @@ fn execute<'a, 'b: 'a>(
     #[cfg(any(target_os = "windows", not(target_arch = "x86_64")))]
     let use_jit = false;
     #[cfg(all(not(target_os = "windows"), target_arch = "x86_64"))]
-    let use_jit = executable.get_compiled_program().is_some();
+    let use_jit = false;
     let stricter_abi_and_runtime_constraints = invoke_context
         .get_feature_set()
         .stricter_abi_and_runtime_constraints;
@@ -1539,7 +1539,11 @@ fn execute<'a, 'b: 'a>(
                 Err(Box::new(error) as Box<dyn std::error::Error>)
             }
             ProgramResult::Err(mut error) => {
-                if !matches!(error, EbpfError::SyscallError(_)) {
+                if invoke_context
+                    .get_feature_set()
+                    .deplete_cu_meter_on_vm_failure
+                    && !matches!(error, EbpfError::SyscallError(_))
+                {
                     // when an exception is thrown during the execution of a
                     // Basic Block (e.g., a null memory dereference or other
                     // faults), determining the exact number of CUs consumed
@@ -1550,7 +1554,7 @@ fn execute<'a, 'b: 'a>(
                     // remaining compute units so that the block cost
                     // tracker uses the full requested compute unit cost for
                     // this failed transaction.
-                    invoke_context.consume(invoke_context.get_remaining());
+                    // invoke_context.consume(invoke_context.get_remaining());
                 }
 
                 if stricter_abi_and_runtime_constraints {

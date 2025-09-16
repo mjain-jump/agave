@@ -171,10 +171,10 @@ pub(crate) fn calculate_stake_points_and_credits(
         //   for which the vote account has a record
         let earned_credits = if credits_in_stake < initial_epoch_credits {
             // the staker observed the entire epoch
-            final_epoch_credits - initial_epoch_credits
+            final_epoch_credits.saturating_sub(initial_epoch_credits)
         } else if credits_in_stake < final_epoch_credits {
             // the staker registered sometime during the epoch, partial credit
-            final_epoch_credits - new_credits_observed
+            final_epoch_credits.saturating_sub(new_credits_observed)
         } else {
             // the staker has already observed or been redeemed this epoch
             //  or was activated after this epoch
