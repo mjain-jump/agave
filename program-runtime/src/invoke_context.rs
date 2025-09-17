@@ -543,15 +543,22 @@ impl<'a> InvokeContext<'a> {
 
         // The Murmur3 hash value (used by RBPF) of the string "entrypoint"
         const ENTRYPOINT_KEY: u32 = 0x71E3CF81;
+        println!("builtin_id: {:?}", builtin_id);
         let entry = self
             .program_cache_for_tx_batch
             .find(&builtin_id)
             .ok_or(InstructionError::UnsupportedProgramId)?;
+        println!("entry: {:?}", entry);
         let function = match &entry.program {
-            ProgramCacheEntryType::Builtin(program) => program
+            ProgramCacheEntryType::Builtin(program) => {
+                println!("program: {:?}", program);
+                println!("function registry: {:?}", program.get_function_registry());
+                println!("Lookup: {:?}", program.get_function_registry().lookup_by_key(ENTRYPOINT_KEY));
+                program
                 .get_function_registry()
                 .lookup_by_key(ENTRYPOINT_KEY)
-                .map(|(_name, function)| function),
+                .map(|(_name, function)| function)
+            },
             _ => None,
         }
         .ok_or(InstructionError::UnsupportedProgramId)?;

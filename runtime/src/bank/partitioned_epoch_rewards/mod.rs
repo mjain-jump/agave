@@ -167,6 +167,7 @@ impl Default for CalculateValidatorRewardsResult {
 }
 
 /// hold reward calc info to avoid recalculation across functions
+#[derive(Debug)]
 pub(super) struct EpochRewardCalculateParamInfo<'a> {
     pub(super) stake_history: StakeHistory,
     pub(super) stake_delegations: Vec<(&'a Pubkey, &'a StakeAccount<Delegation>)>,

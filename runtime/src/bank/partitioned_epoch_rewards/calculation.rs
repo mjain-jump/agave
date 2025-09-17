@@ -20,7 +20,7 @@ use {
     },
     ahash::random_state::RandomState as AHashRandomState,
     dashmap::DashMap,
-    log::{debug, info},
+    log::{debug, info, warn},
     rayon::{
         iter::{IntoParallelRefIterator, ParallelIterator},
         ThreadPool,
@@ -384,6 +384,12 @@ impl Bank {
                     let vote_account = vote_account_from_cache?;
                     let vote_state_view = vote_account.vote_state_view();
                     let mut stake_state = *stake_account.stake_state();
+
+                    warn!("Vote pubkey: {vote_pubkey}");
+                    vote_state_view.epoch_credits_iter().for_each(|epoch_credit_item| {
+                        let (epoch, final_epoch_credits, initial_epoch_credits) = epoch_credit_item.into();
+                        warn!("Epoch: {epoch}, Final epoch credits: {final_epoch_credits}, Initial epoch credits: {initial_epoch_credits}");
+                    });
 
                     let redeemed = redeem_rewards(
                         rewarded_epoch,

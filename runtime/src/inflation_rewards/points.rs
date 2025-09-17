@@ -181,6 +181,9 @@ pub(crate) fn calculate_stake_points_and_credits(
             0
         };
         let earned_credits = u128::from(earned_credits);
+        println!(
+            "Stake amount: {stake_amount}, Earned credits: {earned_credits}, Initial: {initial_epoch_credits}, final: {final_epoch_credits}, new_credits_observed: {new_credits_observed}"
+        );
 
         // don't want to assume anything about order of the iterator...
         new_credits_observed = new_credits_observed.max(final_epoch_credits);

@@ -1040,6 +1040,7 @@ impl<FG: ForkGraph> TransactionBatchProcessor<FG> {
         let mut sysvar_cache = self.sysvar_cache.write().unwrap();
         sysvar_cache.fill_missing_entries(|pubkey, set_sysvar| {
             if let Some((account, _slot)) = callbacks.get_account_shared_data(pubkey) {
+                println!("Setting sysvar cache entry for {pubkey}, slot: {_slot}");
                 set_sysvar(account.data());
             }
         });

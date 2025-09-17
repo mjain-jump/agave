@@ -1,18 +1,9 @@
 use {
-    super::Bank,
-    rayon::prelude::*,
-    solana_account::{accounts_equal, AccountSharedData},
-    solana_accounts_db::accounts_db::AccountsDb,
-    solana_hash::Hash,
-    solana_lattice_hash::lt_hash::LtHash,
-    solana_measure::{meas_dur, measure::Measure},
-    solana_pubkey::Pubkey,
-    solana_svm_callback::AccountState,
-    std::{
+    super::Bank, log::warn, rayon::prelude::*, solana_account::{accounts_equal, AccountSharedData}, solana_accounts_db::accounts_db::AccountsDb, solana_hash::Hash, solana_lattice_hash::lt_hash::LtHash, solana_measure::{meas_dur, measure::Measure}, solana_pubkey::Pubkey, solana_svm_callback::AccountState, std::{
         ops::AddAssign,
         sync::atomic::{AtomicU64, Ordering},
         time::Duration,
-    },
+    }
 };
 
 impl Bank {
@@ -145,6 +136,7 @@ impl Bank {
                                 }
                             }
                         });
+                        // println!("Trying out pubkey: {}, initial state of account: {:#?}", pubkey, initial_state_of_account);
                         accum.1.time_loading_accounts_prev += measure_load;
 
                         // mix out the previous version of the account
@@ -159,6 +151,9 @@ impl Bank {
                                 if are_accounts_equal {
                                     // this account didn't actually change, so skip it for lt hashing
                                     accum.1.num_accounts_unmodified += 1;
+                                    // warn!("Pubkey: {} DID NOT CHANGE, prev_lt_hash: {}", pubkey, AccountsDb::lt_hash_account(&prev_account, pubkey).0.checksum());
+                                    // let slot_hashes = bincode::deserialize::<SlotHashes>(prev_account.clone().data()).unwrap();
+                                    // warn!("Slot hashes: {:#?}", slot_hashes);
                                     return accum;
                                 }
                                 let (prev_lt_hash, measure_hashing) =
@@ -167,12 +162,15 @@ impl Bank {
                                     meas_dur!(accum.0.mix_out(&prev_lt_hash.0));
                                 accum.1.time_computing_hashes += measure_hashing;
                                 accum.1.time_mixing_hashes += measure_mixing;
+                                warn!("Pubkey: {}, prev_lt_hash: {}", pubkey, prev_lt_hash.0.checksum());
                             }
                         }
 
                         // mix in the new version of the account
                         let (curr_lt_hash, measure_hashing) =
                             meas_dur!(AccountsDb::lt_hash_account(curr_account, pubkey));
+                        warn!("Pubkey: {}, curr_lt_hash: {}", pubkey, curr_lt_hash.0.checksum());
+                        warn!("------");
                         let (_, measure_mixing) = meas_dur!(accum.0.mix_in(&curr_lt_hash.0));
                         accum.1.time_computing_hashes += measure_hashing;
                         accum.1.time_mixing_hashes += measure_mixing;
@@ -195,6 +193,8 @@ impl Bank {
             .accounts_db
             .thread_pool_foreground
             .install(do_calculate_delta_lt_hash);
+
+        warn!("THE LTHASH CALCULATED IS {}", delta_lt_hash.checksum());
 
         let total_time = measure_total.end_as_duration();
         let num_accounts_modified =

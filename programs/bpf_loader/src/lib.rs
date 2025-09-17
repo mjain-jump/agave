@@ -344,6 +344,20 @@ fn create_memory_mapping<'a, 'b, C: ContextObject>(
     .chain(additional_regions)
     .collect();
 
+    let ro_region = executable.get_ro_region();
+    // Print out each byte in ro_region.haddr for ro_region.len bytes
+    // unsafe {
+    //     let ptr = ro_region.host_addr as *const u8;
+    //     let len = ro_region.len;
+    //     for i in 0..len {
+    //         print!("{:02x} ", *ptr.add(i as usize));
+    //         if (i+1) % 16 == 0 {
+    //             print!("\n");
+    //         }
+    //     }
+    //     println!("\n-----\n");
+    // }
+
     Ok(MemoryMapping::new_with_access_violation_handler(
         regions,
         config,
@@ -420,6 +434,8 @@ pub(crate) fn process_instruction_inner(
         })?;
     get_or_create_executor_time.stop();
     invoke_context.timings.get_or_create_executor_us += get_or_create_executor_time.as_us();
+
+    println!("Executor program: {:?}", executor.program);
 
     match &executor.program {
         ProgramCacheEntryType::FailedVerification(_)
@@ -1459,7 +1475,8 @@ fn execute<'a, 'b: 'a>(
     #[cfg(any(target_os = "windows", not(target_arch = "x86_64")))]
     let use_jit = false;
     #[cfg(all(not(target_os = "windows"), target_arch = "x86_64"))]
-    let use_jit = executable.get_compiled_program().is_some();
+    // let use_jit = executable.get_compiled_program().is_some();
+    let use_jit = false;
     let stricter_abi_and_runtime_constraints = invoke_context
         .get_feature_set()
         .stricter_abi_and_runtime_constraints;

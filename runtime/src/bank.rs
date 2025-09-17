@@ -4065,7 +4065,7 @@ impl Bank {
     }
 
     fn apply_simd_0306_cost_tracker_changes(&mut self) {
-        let mut cost_tracker = self.write_cost_tracker().unwrap();
+        let mut cost_tracker: RwLockWriteGuard<'_, CostTracker> = self.write_cost_tracker().unwrap();
         let block_cost_limit = cost_tracker.get_block_limit();
         let vote_cost_limit = cost_tracker.get_vote_limit();
         // SIMD-0306 makes account cost limit 40% of the block cost limit.

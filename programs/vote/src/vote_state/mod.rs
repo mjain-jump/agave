@@ -823,6 +823,8 @@ pub fn withdraw<S: std::hash::BuildHasher>(
         .get_state::<VoteStateVersions>()?
         .convert_to_v3();
 
+    println!("Vote state: {:?}", vote_state);
+
     verify_authorized_signer(&vote_state.authorized_withdrawer, signers)?;
 
     let remaining_balance = vote_account

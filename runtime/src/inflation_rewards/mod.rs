@@ -4,12 +4,7 @@ use {
     self::points::{
         calculate_stake_points_and_credits, CalculatedStakePoints, InflationPointCalculationEvent,
         PointValue, SkippedReason,
-    },
-    solana_clock::Epoch,
-    solana_instruction::error::InstructionError,
-    solana_stake_interface::{error::StakeError, stake_history::StakeHistory},
-    solana_stake_program::stake_state::{Stake, StakeStateV2},
-    solana_vote::vote_state_view::VoteStateView,
+    }, log::info, solana_clock::Epoch, solana_instruction::error::InstructionError, solana_stake_interface::{error::StakeError, stake_history::StakeHistory}, solana_stake_program::stake_state::{Stake, StakeStateV2}, solana_vote::vote_state_view::VoteStateView
 };
 
 pub mod points;
@@ -171,6 +166,12 @@ fn calculate_stake_rewards(
         }
         return None;
     }
+
+    info!("Points: {}", points);
+    info!("Point value.rewards: {}", point_value.rewards);
+    info!("Point value.points: {}", point_value.points);
+    info!("Checked mul: {:?}", points.checked_mul(u128::from(point_value.rewards)));
+    info!("STAKE: {:?}", stake);
 
     // The final unwrap is safe, as points_value.points is guaranteed to be non zero above.
     let rewards = points
