@@ -49,35 +49,18 @@ use {
         stake_account::StakeAccount,
         stake_history::StakeHistory as CowStakeHistory,
         stake_weighted_timestamp::{
-            calculate_stake_weighted_timestamp, MaxAllowableDrift,
-            MAX_ALLOWABLE_DRIFT_PERCENTAGE_FAST, MAX_ALLOWABLE_DRIFT_PERCENTAGE_SLOW_V2,
+            MAX_ALLOWABLE_DRIFT_PERCENTAGE_FAST, MAX_ALLOWABLE_DRIFT_PERCENTAGE_SLOW_V2, MaxAllowableDrift, calculate_stake_weighted_timestamp
         },
         stakes::{SerdeStakesToStakeFormat, Stakes, StakesCache},
         status_cache::{SlotDelta, StatusCache},
         transaction_batch::{OwnedOrBorrowed, TransactionBatch},
-    },
-    accounts_lt_hash::{CacheValue as AccountsLtHashCacheValue, Stats as AccountsLtHashStats},
-    agave_feature_set::{
-        self as feature_set, increase_cpi_account_info_limit, raise_cpi_nesting_limit_to_8,
-        relax_programdata_account_check_migration, FeatureSet,
-    },
-    agave_precompiles::{get_precompile, get_precompiles, is_precompile},
-    agave_reserved_account_keys::ReservedAccountKeys,
-    agave_snapshots::snapshot_hash::SnapshotHash,
-    agave_syscalls::{
+    }, accounts_lt_hash::{CacheValue as AccountsLtHashCacheValue, Stats as AccountsLtHashStats}, agave_feature_set::{
+        self as feature_set, FeatureSet, increase_cpi_account_info_limit, raise_cpi_nesting_limit_to_8, relax_programdata_account_check_migration
+    }, agave_precompiles::{get_precompile, get_precompiles, is_precompile}, agave_reserved_account_keys::ReservedAccountKeys, agave_snapshots::snapshot_hash::SnapshotHash, agave_syscalls::{
         create_program_runtime_environment_v1, create_program_runtime_environment_v2,
-    },
-    ahash::AHashSet,
-    dashmap::DashMap,
-    log::*,
-    partitioned_epoch_rewards::PartitionedRewardsCalculation,
-    rayon::{ThreadPool, ThreadPoolBuilder},
-    serde::{Deserialize, Serialize},
-    solana_account::{
-        create_account_shared_data_with_fields as create_account, from_account, Account,
-        AccountSharedData, InheritableAccountFields, ReadableAccount, WritableAccount,
-    },
-    solana_accounts_db::{
+    }, ahash::AHashSet, dashmap::DashMap, log::*, partitioned_epoch_rewards::PartitionedRewardsCalculation, rayon::{ThreadPool, ThreadPoolBuilder}, serde::{Deserialize, Serialize}, solana_account::{
+        Account, AccountSharedData, InheritableAccountFields, ReadableAccount, WritableAccount, create_account_shared_data_with_fields as create_account, from_account
+    }, solana_accounts_db::{
         account_locks::validate_account_locks,
         accounts::{AccountAddressFilter, Accounts, PubkeyAccountSlot},
         accounts_db::{AccountStorageEntry, AccountsDb, AccountsDbConfig},
@@ -88,50 +71,16 @@ use {
         blockhash_queue::BlockhashQueue,
         storable_accounts::StorableAccounts,
         utils::create_account_shared_data,
-    },
-    solana_builtins::{BUILTINS, STATELESS_BUILTINS},
-    solana_clock::{
-        BankId, Epoch, Slot, SlotIndex, UnixTimestamp, INITIAL_RENT_EPOCH, MAX_PROCESSING_AGE,
-        MAX_TRANSACTION_FORWARDING_DELAY,
-    },
-    solana_cluster_type::ClusterType,
-    solana_compute_budget::compute_budget::ComputeBudget,
-    solana_compute_budget_instruction::instructions_processor::process_compute_budget_instructions,
-    solana_cost_model::{block_cost_limits::simd_0286_block_limits, cost_tracker::CostTracker},
-    solana_epoch_info::EpochInfo,
-    solana_epoch_schedule::EpochSchedule,
-    solana_feature_gate_interface as feature,
-    solana_fee::FeeFeatures,
-    solana_fee_calculator::FeeRateGovernor,
-    solana_fee_structure::{FeeBudgetLimits, FeeDetails, FeeStructure},
-    solana_genesis_config::GenesisConfig,
-    solana_hard_forks::HardForks,
-    solana_hash::Hash,
-    solana_inflation::Inflation,
-    solana_keypair::Keypair,
-    solana_lattice_hash::lt_hash::LtHash,
-    solana_measure::{measure::Measure, measure_time, measure_us},
-    solana_message::{inner_instruction::InnerInstructions, AccountKeys, SanitizedMessage},
-    solana_packet::PACKET_DATA_SIZE,
-    solana_precompile_error::PrecompileError,
-    solana_program_runtime::{
+    }, solana_builtins::{BUILTINS, STATELESS_BUILTINS}, solana_clock::{
+        BankId, Epoch, INITIAL_RENT_EPOCH, MAX_PROCESSING_AGE, MAX_TRANSACTION_FORWARDING_DELAY, Slot, SlotIndex, UnixTimestamp
+    }, solana_cluster_type::ClusterType, solana_compute_budget::compute_budget::ComputeBudget, solana_compute_budget_instruction::instructions_processor::process_compute_budget_instructions, solana_cost_model::{block_cost_limits::simd_0286_block_limits, cost_tracker::CostTracker}, solana_epoch_info::EpochInfo, solana_epoch_schedule::EpochSchedule, solana_feature_gate_interface as feature, solana_fee::FeeFeatures, solana_fee_calculator::FeeRateGovernor, solana_fee_structure::{FeeBudgetLimits, FeeDetails, FeeStructure}, solana_genesis_config::GenesisConfig, solana_hard_forks::HardForks, solana_hash::Hash, solana_inflation::Inflation, solana_keypair::Keypair, solana_lattice_hash::lt_hash::LtHash, solana_measure::{measure::Measure, measure_time, measure_us}, solana_message::{AccountKeys, SanitizedMessage, inner_instruction::InnerInstructions}, solana_packet::PACKET_DATA_SIZE, solana_precompile_error::PrecompileError, solana_program_runtime::{
         invoke_context::BuiltinFunctionWithContext,
         loaded_programs::{ProgramCacheEntry, ProgramRuntimeEnvironments},
-    },
-    solana_pubkey::{Pubkey, PubkeyHasherBuilder},
-    solana_reward_info::RewardInfo,
-    solana_runtime_transaction::{
+    }, solana_pubkey::{Pubkey, PubkeyHasherBuilder}, solana_rent::Rent, solana_reward_info::RewardInfo, solana_runtime_transaction::{
         runtime_transaction::RuntimeTransaction, transaction_with_meta::TransactionWithMeta,
-    },
-    solana_sdk_ids::{bpf_loader_upgradeable, incinerator, native_loader},
-    solana_sha256_hasher::hashv,
-    solana_signature::Signature,
-    solana_slot_hashes::SlotHashes,
-    solana_slot_history::{Check, SlotHistory},
-    solana_stake_interface::{
+    }, solana_sdk_ids::{bpf_loader_upgradeable, incinerator, native_loader}, solana_sha256_hasher::hashv, solana_signature::Signature, solana_slot_hashes::SlotHashes, solana_slot_history::{Check, SlotHistory}, solana_stake_interface::{
         stake_history::StakeHistory, state::Delegation, sysvar::stake_history,
-    },
-    solana_svm::{
+    }, solana_svm::{
         account_loader::LoadedTransaction,
         account_overrides::AccountOverrides,
         program_loader::load_program_with_pubkey,
@@ -149,39 +98,24 @@ use {
             ExecutionRecordingConfig, TransactionBatchProcessor, TransactionLogMessages,
             TransactionProcessingConfig, TransactionProcessingEnvironment,
         },
-    },
-    solana_svm_callback::{AccountState, InvokeContextCallback, TransactionProcessingCallback},
-    solana_svm_timings::{ExecuteTimingType, ExecuteTimings},
-    solana_svm_transaction::svm_message::SVMMessage,
-    solana_system_transaction as system_transaction,
-    solana_sysvar::{self as sysvar, last_restart_slot::LastRestartSlot, SysvarSerialize},
-    solana_sysvar_id::SysvarId,
-    solana_time_utils::years_as_slots,
-    solana_transaction::{
-        sanitized::{MessageHash, SanitizedTransaction, MAX_TX_ACCOUNT_LOCKS},
-        versioned::VersionedTransaction,
-        Transaction, TransactionVerificationMode,
-    },
-    solana_transaction_context::{
-        transaction_accounts::KeyedAccountSharedData, TransactionReturnData,
-    },
-    solana_transaction_error::{TransactionError, TransactionResult as Result},
-    solana_vote::vote_account::{VoteAccount, VoteAccounts, VoteAccountsHashMap},
-    std::{
+    }, solana_svm_callback::{AccountState, InvokeContextCallback, TransactionProcessingCallback}, solana_svm_timings::{ExecuteTimingType, ExecuteTimings}, solana_svm_transaction::svm_message::SVMMessage, solana_system_transaction as system_transaction, solana_sysvar::{self as sysvar, SysvarSerialize, last_restart_slot::LastRestartSlot}, solana_sysvar_id::SysvarId, solana_time_utils::years_as_slots, solana_transaction::{
+        Transaction, TransactionVerificationMode, sanitized::{MAX_TX_ACCOUNT_LOCKS, MessageHash, SanitizedTransaction}, versioned::VersionedTransaction
+    }, solana_transaction_context::{
+        TransactionReturnData, transaction_accounts::KeyedAccountSharedData
+    }, solana_transaction_error::{TransactionError, TransactionResult as Result}, solana_vote::vote_account::{VoteAccount, VoteAccounts, VoteAccountsHashMap}, std::{
         collections::{HashMap, HashSet},
         fmt,
         ops::AddAssign,
         path::PathBuf,
         slice,
         sync::{
-            atomic::{
+            Arc, LockResult, Mutex, RwLock, RwLockReadGuard, RwLockWriteGuard, Weak, atomic::{
                 AtomicBool, AtomicI64, AtomicU64,
                 Ordering::{self, AcqRel, Acquire, Relaxed},
-            },
-            Arc, LockResult, Mutex, RwLock, RwLockReadGuard, RwLockWriteGuard, Weak,
+            }
         },
         time::{Duration, Instant},
-    },
+    }
 };
 #[cfg(feature = "dev-context-only-utils")]
 use {
@@ -2699,6 +2633,10 @@ impl Bank {
 
     pub fn set_rent_burn_percentage(&mut self, burn_percent: u8) {
         self.rent_collector.rent.burn_percent = burn_percent;
+    }
+
+    pub fn set_rent_collector_rent(&mut self, rent: Rent) {
+        self.rent_collector.rent = rent;
     }
 
     pub fn set_hashes_per_tick(&mut self, hashes_per_tick: Option<u64>) {
