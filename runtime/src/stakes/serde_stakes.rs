@@ -2,6 +2,7 @@ use {
     super::{StakeAccount, Stakes},
     crate::stake_history::StakeHistory,
     im::HashMap as ImHashMap,
+    qualifier_attr::qualifiers,
     serde::{Deserialize, Serialize, Serializer, ser::SerializeMap},
     solana_clock::Epoch,
     solana_pubkey::Pubkey,
@@ -70,7 +71,8 @@ impl Serialize for SerdeStakesToStakeFormat {
     }
 }
 
-pub fn serialize_stake_accounts_to_delegation_format<S: Serializer>(
+#[cfg_attr(feature = "dev-context-only-utils", qualifiers(pub))]
+pub(crate) fn serialize_stake_accounts_to_delegation_format<S: Serializer>(
     stakes: &Stakes<StakeAccount>,
     serializer: S,
 ) -> Result<S::Ok, S::Error> {

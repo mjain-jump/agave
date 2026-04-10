@@ -1,5 +1,6 @@
 use {
     crate::stakes::{DeserializableStakes, SerdeStakesToStakeFormat, Stakes},
+    qualifier_attr::qualifiers,
     serde::{Deserialize, Serialize},
     solana_bls_signatures::{Pubkey as BLSPubkey, PubkeyCompressed as BLSPubkeyCompressed},
     solana_clock::Epoch,
@@ -155,7 +156,8 @@ impl From<DeserializableVersionedEpochStakes> for VersionedEpochStakes {
 }
 
 impl VersionedEpochStakes {
-    pub fn new(stakes: SerdeStakesToStakeFormat, leader_schedule_epoch: Epoch) -> Self {
+    #[cfg_attr(feature = "dev-context-only-utils", qualifiers(pub))]
+    pub(crate) fn new(stakes: SerdeStakesToStakeFormat, leader_schedule_epoch: Epoch) -> Self {
         let epoch_vote_accounts = stakes.vote_accounts();
         let (total_stake, node_id_to_vote_accounts, epoch_authorized_voters) =
             Self::parse_epoch_vote_accounts(epoch_vote_accounts.as_ref(), leader_schedule_epoch);

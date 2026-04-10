@@ -5,6 +5,7 @@ use solana_stake_interface::state::Stake;
 use {
     crate::{stake_account, stake_history::StakeHistory},
     im::HashMap as ImHashMap,
+    qualifier_attr::qualifiers,
     log::error,
     num_derive::ToPrimitive,
     rayon::{ThreadPool, prelude::*},
@@ -225,7 +226,8 @@ impl Stakes<StakeAccount> {
     /// full account state for respective stake pubkeys. get_account function
     /// should return the account at the respective slot where stakes where
     /// cached.
-    pub fn load_from_deserialized_delegations<F>(
+    #[cfg_attr(feature = "dev-context-only-utils", qualifiers(pub))]
+    pub(crate) fn load_from_deserialized_delegations<F>(
         stakes: DeserializableStakes<Delegation>,
         get_account: F,
     ) -> Result<Self, Error>
