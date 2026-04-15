@@ -10402,7 +10402,7 @@ checksum = "dcf09694a0fc14e5ffb18f9b7b7c0f15ecb6eac5b5610bf76a1853459d19daf9"
 [[package]]
 name = "solana-sbpf"
 version = "0.14.4"
-source = "git+https://github.com/firedancer-io/sbpf?branch=sbpf-v0.14.4-patches#d32556248756e19ee49a44a94ccb633e2414a386"
+source = "git+https://github.com/firedancer-io/sbpf?branch=sbpf-v0.14.4-patches#7f8004458ee3c873f80e527ced73ecf71e53fd1f"
 dependencies = [
  "byteorder",
  "combine 3.8.1",
