@@ -3002,16 +3002,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "398ea4fabe40b9b0d885340a2a991a44c8a645624075ad966d21f88688e2b69e"
 
 [[package]]
-name = "flatbuffers"
-version = "25.12.19"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "35f6839d7b3b98adde531effaf34f0c2badc6f4735d26fe74709d8e513a96ef3"
-dependencies = [
- "bitflags 2.11.0",
- "rustc_version 0.4.1",
-]
-
-[[package]]
 name = "flate2"
 version = "1.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5622,11 +5612,10 @@ dependencies = [
 
 [[package]]
 name = "protosol"
-version = "5.6.0"
+version = "6.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ef1cd5f0c67812ecb2413e98456e30241c38906199815ba099e9996749aae896"
+checksum = "5501f81d8ed5b138a9e6069a03d461c2574ba1c4bbf5730287defcbaf8127057"
 dependencies = [
- "flatbuffers",
  "prost",
 ]
 
