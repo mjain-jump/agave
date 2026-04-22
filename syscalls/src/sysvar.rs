@@ -215,6 +215,10 @@ declare_builtin_function!(
                 .saturating_add(std::cmp::max(sysvar_buf_cost, mem_op_base_cost)),
         )?;
 
+        if !check_aligned {
+            return Err(SyscallError::UnalignedPointer.into());
+        }
+
         if var_addr >= ebpf::MM_INPUT_START
             && invoke_context
                 .get_feature_set()
