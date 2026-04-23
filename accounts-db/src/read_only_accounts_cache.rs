@@ -110,12 +110,18 @@ impl ReadOnlyAccountsCache {
         max_data_size_lo: usize,
         max_data_size_hi: usize,
         evict_sample_size: usize,
+        num_shards: Option<usize>,
     ) -> Self {
         assert!(max_data_size_lo <= max_data_size_hi);
         assert!(evict_sample_size > 0);
+        let num_shards = num_shards.unwrap_or(NUM_SHARDS);
+        assert!(
+            num_shards.is_power_of_two(),
+            "num_shards must be a power of two, got {num_shards}"
+        );
         let cache = Arc::new(DashMap::with_hasher_and_shard_amount(
             AHashRandomState::default(),
-            NUM_SHARDS,
+            num_shards,
         ));
         let data_size = Arc::new(AtomicUsize::default());
         let cache_len = Arc::new(AtomicUsize::default());
@@ -516,6 +522,7 @@ mod tests {
             MAX_CACHE_SIZE,
             usize::MAX, // <-- do not evict in the background
             evict_sample_size,
+            None,
         );
         let slots: Vec<Slot> = repeat_with(|| rng.random_range(0..1000)).take(5).collect();
         let pubkeys: Vec<Pubkey> = repeat_with(|| {
@@ -577,7 +584,8 @@ mod tests {
         const ACCOUNT_DATA_SIZE: usize = 200;
         const MAX_ENTRIES: usize = 7;
         const MAX_CACHE_SIZE: usize = MAX_ENTRIES * (CACHE_ENTRY_SIZE + ACCOUNT_DATA_SIZE);
-        let cache = ReadOnlyAccountsCache::new(MAX_CACHE_SIZE, MAX_CACHE_SIZE, evict_sample_size);
+        let cache =
+            ReadOnlyAccountsCache::new(MAX_CACHE_SIZE, MAX_CACHE_SIZE, evict_sample_size, None);
 
         for i in 0..MAX_ENTRIES {
             let pubkey = Pubkey::new_unique();
@@ -618,6 +626,7 @@ mod tests {
             usize::MAX,
             usize::MAX,
             1, /* evictions never trigger */
+            None,
         );
 
         let pubkeys: Vec<_> = (0..NUM_ACCOUNTS).map(|_| Pubkey::new_unique()).collect();
