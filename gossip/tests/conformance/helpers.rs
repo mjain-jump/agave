@@ -101,7 +101,7 @@ pub(crate) fn make_push_message_bytes(pubkey: &[u8; 32], values: &[Vec<u8>]) -> 
 
 /// Build a raw CrdsValue: signature(64) + crds_data_bytes.
 pub(crate) fn make_crds_value_bytes(signature: &[u8; 64], crds_data: &[u8]) -> Vec<u8> {
-    let mut buf = Vec::with_capacity(64 + crds_data.len());
+    let mut buf = Vec::with_capacity(64usize.saturating_add(crds_data.len()));
     buf.extend_from_slice(signature);
     buf.extend_from_slice(crds_data);
     buf
@@ -116,6 +116,17 @@ pub(crate) fn make_contact_info_crds_data(pubkey: &[u8; 32], wallclock: u64) -> 
         wallclock,
         0, // shred_version
     );
+    bincode::serialize(&CrdsData::ContactInfo(ci)).unwrap()
+}
+
+/// Build a ContactInfo CrdsData with localhost sockets populated.
+pub(crate) fn make_contact_info_localhost_crds_data(
+    pubkey: &[u8; 32],
+    wallclock: u64,
+) -> Vec<u8> {
+    use solana_gossip::{contact_info::ContactInfo, crds_data::CrdsData};
+    let mut ci = ContactInfo::new_localhost(&solana_pubkey::Pubkey::from(*pubkey), wallclock);
+    ci.set_wallclock(wallclock);
     bincode::serialize(&CrdsData::ContactInfo(ci)).unwrap()
 }
 
