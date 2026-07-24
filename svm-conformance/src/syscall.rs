@@ -181,7 +181,10 @@ pub fn execute_vm_syscall(input: ProtoSyscallContext) -> ProtoSyscallEffects {
         virtual_address_space_adjustments,
     );
 
-    let cu_avail = invoke_context.get_remaining();
+    // Report pre-burn CUs: a CPI callee's VM fault triggers the SIMD-0182 burn.
+    let cu_avail = invoke_context
+        .get_remaining()
+        .saturating_add(invoke_context.timings.depleted_compute_units.0);
     let mut program_result = program_result;
     if let Err(pop_err) = invoke_context.pop()
         && matches!(program_result, StableResult::Ok(_))

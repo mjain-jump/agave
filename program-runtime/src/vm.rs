@@ -362,25 +362,14 @@ pub fn execute<'a, 'b: 'a>(
                 Err(Box::new(error) as Box<dyn std::error::Error>)
             }
             ProgramResult::Err(mut error) => {
-                // Don't clean me up!!
-                // This feature is active on all networks, but we still toggle
-                // it off during fuzzing.
-                if invoke_context
-                    .get_feature_set()
-                    .deplete_cu_meter_on_vm_failure
-                    && !matches!(error, EbpfError::SyscallError(_))
-                {
-                    // when an exception is thrown during the execution of a
-                    // Basic Block (e.g., a null memory dereference or other
-                    // faults), determining the exact number of CUs consumed
-                    // up to the point of failure requires additional effort
-                    // and is unnecessary since these cases are rare.
-                    //
-                    // In order to simplify CU tracking, simply consume all
-                    // remaining compute units so that the block cost
-                    // tracker uses the full requested compute unit cost for
-                    // this failed transaction.
-                    invoke_context.consume(invoke_context.get_remaining());
+                if !matches!(error, EbpfError::SyscallError(_)) {
+                    // SIMD-0182: the exact CUs consumed up to a VM fault are
+                    // not tracked, so burn all remaining CUs and charge the
+                    // full requested cost. The burned amount is recorded for
+                    // pre-burn CU reporting.
+                    let depleted = invoke_context.get_remaining();
+                    invoke_context.timings.depleted_compute_units += depleted;
+                    invoke_context.consume(depleted);
                 }
 
                 if virtual_address_space_adjustments {

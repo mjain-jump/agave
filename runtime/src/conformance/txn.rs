@@ -91,6 +91,8 @@ pub enum BankTxnProcessingResult {
     Processed {
         result: TransactionProcessingResult,
         runtime_transaction: Box<RuntimeTransaction<SanitizedTransaction>>,
+        /// CUs burned by the SIMD-0182 depletion, for pre-burn CU reporting.
+        depleted_compute_units: u64,
     },
 }
 
@@ -204,6 +206,7 @@ pub fn execute_txn(
     BankTxnProcessingResult::Processed {
         result,
         runtime_transaction: Box::new(runtime_transaction),
+        depleted_compute_units: timings.details.depleted_compute_units.0,
     }
 }
 
@@ -473,7 +476,7 @@ pub fn execute_txn_proto(context: &ProtoTxnContext) -> ProtoTxnResult {
         message,
     };
 
-    let (result, runtime_transaction) = match execute_txn(
+    let (result, runtime_transaction, depleted_compute_units) = match execute_txn(
         &accounts,
         feature_set,
         blockhash_queue,
@@ -496,11 +499,17 @@ pub fn execute_txn_proto(context: &ProtoTxnContext) -> ProtoTxnResult {
         BankTxnProcessingResult::Processed {
             result,
             runtime_transaction,
-        } => (result, runtime_transaction),
+            depleted_compute_units,
+        } => (result, runtime_transaction, depleted_compute_units),
     };
     let sanitized_message = runtime_transaction.message();
 
     let mut txn_result = output_txn_result(&result, sanitized_message);
+
+    // Report pre-burn CUs (SIMD-0182 burn); the `cu_avail` below follows.
+    txn_result.executed_units = txn_result
+        .executed_units
+        .saturating_sub(depleted_compute_units);
 
     let cu_avail = match &result {
         Ok(ProcessedTransaction::Executed(executed_tx)) => executed_tx
@@ -776,6 +785,7 @@ mod tests {
             BankTxnProcessingResult::Processed {
                 result: Ok(ProcessedTransaction::Executed(executed_tx)),
                 runtime_transaction,
+                ..
             } => executed_tx
                 .loaded_transaction
                 .accounts

@@ -45,7 +45,6 @@ pub struct FeatureSnapshot {
     pub disable_sbpf_v0_execution: bool,
     pub reenable_sbpf_v0_execution: bool,
     pub disable_sbpf_v0_v1_v2_deployment: bool,
-    pub deplete_cu_meter_on_vm_failure: bool,
     pub fix_alt_bn128_multiplication_input_length: bool,
     pub formalize_loaded_transaction_data_size: bool,
     pub alpenglow: bool,
@@ -134,7 +133,6 @@ impl From<&AHashMap<Pubkey, u64>> for FeatureSnapshot {
             disable_sbpf_v0_execution: is_active(&disable_sbpf_v0_execution::ID),
             reenable_sbpf_v0_execution: is_active(&reenable_sbpf_v0_execution::ID),
             disable_sbpf_v0_v1_v2_deployment: is_active(&disable_sbpf_v0_v1_v2_deployment::ID),
-            deplete_cu_meter_on_vm_failure: is_active(&deplete_cu_meter_on_vm_failure::ID),
             fix_alt_bn128_multiplication_input_length: is_active(
                 &fix_alt_bn128_multiplication_input_length::ID,
             ),
@@ -299,7 +297,6 @@ impl FeatureSet {
             account_data_direct_mapping: snapshot.account_data_direct_mapping,
             enable_bpf_loader_set_authority_checked_ix: snapshot
                 .enable_bpf_loader_set_authority_checked_ix,
-            deplete_cu_meter_on_vm_failure: snapshot.deplete_cu_meter_on_vm_failure,
             abort_on_invalid_curve: snapshot.abort_on_invalid_curve,
             blake3_syscall_enabled: snapshot.blake3_syscall_enabled,
             curve25519_syscall_enabled: snapshot.curve25519_syscall_enabled,
