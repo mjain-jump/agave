@@ -32,7 +32,9 @@ conformance = [
     "dep:xxhash-rust",
     "dev-context-only-utils",
     "solana-instruction-error/serde",
+    "solana-program-runtime/conformance",
     "solana-pubkey/default",
+    "solana-svm-timings/conformance",
     "solana-transaction-error/serde",
 ]
 dev-context-only-utils = [

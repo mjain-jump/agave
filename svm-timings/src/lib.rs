@@ -393,6 +393,7 @@ pub struct ExecuteDetailsTimings {
     pub create_executor_jit_compile_us: Saturating<u64>,
     /// Compute units burned by SIMD-0182 depletion on a VM fault; lets the
     /// conformance harnesses recover the exact pre-burn consumption.
+    #[cfg(feature = "conformance")]
     pub depleted_compute_units: Saturating<u64>,
     pub per_program_timings: HashMap<Pubkey, ProgramTiming>,
 }
@@ -410,7 +411,10 @@ impl ExecuteDetailsTimings {
         self.create_executor_load_elf_us += other.create_executor_load_elf_us;
         self.create_executor_verify_code_us += other.create_executor_verify_code_us;
         self.create_executor_jit_compile_us += other.create_executor_jit_compile_us;
-        self.depleted_compute_units += other.depleted_compute_units;
+        #[cfg(feature = "conformance")]
+        {
+            self.depleted_compute_units += other.depleted_compute_units;
+        }
         for (id, other) in &other.per_program_timings {
             let program_timing = self.per_program_timings.entry(*id).or_default();
             program_timing.accumulate_program_timings(other);
@@ -513,7 +517,10 @@ mod tests {
         other_execute_details_timings.create_vm_us.0 = us;
         other_execute_details_timings.execute_us.0 = us;
         other_execute_details_timings.deserialize_us.0 = us;
-        other_execute_details_timings.depleted_compute_units.0 = us;
+        #[cfg(feature = "conformance")]
+        {
+            other_execute_details_timings.depleted_compute_units.0 = us;
+        }
         other_execute_details_timings.changed_account_count.0 = account_count;
         other_execute_details_timings.total_account_count.0 = account_count;
 

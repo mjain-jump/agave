@@ -17,6 +17,7 @@ rustdoc-args = ["--cfg=docsrs"]
 
 [features]
 agave-unstable-api = []
+conformance = []
 
 [dependencies]
 eager = { workspace = true }

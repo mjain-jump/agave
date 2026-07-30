@@ -99,9 +99,12 @@ pub fn execute_instr_with_callback<C: InvokeContextCallback>(
     };
 
     // Report pre-burn CUs (SIMD-0182 burn; see `depleted_compute_units`).
-    let cu_avail = compute_budget.compute_unit_limit.saturating_sub(
-        compute_units_consumed.saturating_sub(timings.details.depleted_compute_units.0),
-    );
+    #[cfg(feature = "conformance")]
+    let compute_units_consumed =
+        compute_units_consumed.saturating_sub(timings.details.depleted_compute_units.0);
+    let cu_avail = compute_budget
+        .compute_unit_limit
+        .saturating_sub(compute_units_consumed);
     let return_data = transaction_context.get_return_data().1.to_vec();
 
     let logs = Rc::try_unwrap(log_collector)

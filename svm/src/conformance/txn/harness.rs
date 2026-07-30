@@ -194,6 +194,7 @@ pub fn execute_txn_with_callback<C: InvokeContextCallback>(
         .unwrap_or_default();
 
     // Report pre-burn CUs (SIMD-0182 burn; see `depleted_compute_units`).
+    #[cfg(feature = "conformance")]
     let executed_units = executed_units.saturating_sub(timings.details.depleted_compute_units.0);
     let cu_avail = execution_budget
         .compute_unit_limit

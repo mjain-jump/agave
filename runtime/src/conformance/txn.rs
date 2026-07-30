@@ -92,6 +92,7 @@ pub enum BankTxnProcessingResult {
         result: TransactionProcessingResult,
         runtime_transaction: Box<RuntimeTransaction<SanitizedTransaction>>,
         /// CUs burned by the SIMD-0182 depletion, for pre-burn CU reporting.
+        #[cfg(feature = "conformance")]
         depleted_compute_units: u64,
     },
 }
@@ -206,6 +207,7 @@ pub fn execute_txn(
     BankTxnProcessingResult::Processed {
         result,
         runtime_transaction: Box::new(runtime_transaction),
+        #[cfg(feature = "conformance")]
         depleted_compute_units: timings.details.depleted_compute_units.0,
     }
 }

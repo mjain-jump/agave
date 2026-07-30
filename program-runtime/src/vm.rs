@@ -365,10 +365,13 @@ pub fn execute<'a, 'b: 'a>(
                 if !matches!(error, EbpfError::SyscallError(_)) {
                     // SIMD-0182: the exact CUs consumed up to a VM fault are
                     // not tracked, so burn all remaining CUs and charge the
-                    // full requested cost. The burned amount is recorded for
-                    // pre-burn CU reporting.
+                    // full requested cost.
                     let depleted = invoke_context.get_remaining();
-                    invoke_context.timings.depleted_compute_units += depleted;
+                    #[cfg(feature = "conformance")]
+                    {
+                        // Record the burn for pre-burn conformance reporting.
+                        invoke_context.timings.depleted_compute_units += depleted;
+                    }
                     invoke_context.consume(depleted);
                 }
 
