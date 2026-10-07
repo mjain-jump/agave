@@ -29,10 +29,7 @@ use {
         snapshot_utils::create_tmp_accounts_dir_for_tests,
         stake_history::StakeHistory,
         stake_utils,
-        stakes::{
-            DeserializableDelegationStakes, InvalidCacheEntryReason, SerdeStakesToStakeFormat,
-            Stakes, StakesCache,
-        },
+        stakes::{InvalidCacheEntryReason, SerdeStakesToStakeFormat, Stakes, StakesCache},
         sysvar_account::{create_account, from_account},
     },
     agave_feature_set::{self as feature_set, FeatureSet},
@@ -147,7 +144,7 @@ use {
     },
     solana_transaction_context::MAX_INSTRUCTION_TRACE_LENGTH,
     solana_transaction_error::{TransactionError, TransactionResult as Result},
-    solana_vote::vote_account::{VoteAccount, VoteAccounts},
+    solana_vote::vote_account::VoteAccount,
     solana_vote_interface::state::{BLS_PUBLIC_KEY_COMPRESSED_SIZE, TowerSync},
     solana_vote_program::{
         vote_instruction,
@@ -5535,6 +5532,15 @@ fn test_bank_hash_consistency(deprecate_rent_exemption_threshold: bool) {
     }
 }
 
+/// The stake and vote pubkeys a snapshot load would collect while building
+/// the accounts index.
+fn stake_and_vote_pubkeys(stakes: &Stakes<StakeAccount<Delegation>>) -> (Vec<Pubkey>, Vec<Pubkey>) {
+    (
+        stakes.stake_delegations().keys().copied().collect(),
+        stakes.vote_accounts().inner().keys().copied().collect(),
+    )
+}
+
 /// Tests determinism of a bank hash across snapshot restores and epoch
 /// boundaries.
 #[test]
@@ -5615,23 +5621,17 @@ fn test_bank_hash_deterministic_with_stakes_cache() {
     // additions, and removals.
     let restored_stakes = {
         let stakes = bank0.stakes_cache.stakes();
-        let deserialized_stakes = DeserializableDelegationStakes {
-            vote_accounts: stakes.vote_accounts().clone(),
-            stake_delegations: vec![],
-            unused: 0,
-            epoch: 0,
-            stake_history: stakes.history().clone(),
-        };
-        let stake_pubkeys = stakes.stake_delegations().keys().copied().collect();
-        Stakes::load_from_accounts(deserialized_stakes, stake_pubkeys, |pubkey| {
-            bank0.get_account(pubkey)
-        })
-        .unwrap()
+        let (stake_pubkeys, vote_pubkeys) = stake_and_vote_pubkeys(&stakes);
+        Stakes::load_from_accounts(
+            0,
+            stakes.history().clone(),
+            bank0.new_warmup_cooldown_rate_epoch(),
+            stake_pubkeys,
+            vote_pubkeys,
+            |pubkey| bank0.get_account(pubkey),
+        )
     };
     bank0.stakes_cache = StakesCache::new(restored_stakes);
-    bank0
-        .stakes_cache
-        .refresh_delegated_stakes(bank0.new_warmup_cooldown_rate_epoch());
 
     for (validator_index, validator_keypairs) in validator_keypairs.iter().enumerate() {
         let vote_pubkey = validator_keypairs.vote_keypair.pubkey();
@@ -13434,6 +13434,7 @@ fn test_new_from_snapshot_uses_rent_from_sysvar() {
     // Reconstruct bank from corrupted fields.
     // Use `None` to ensure new_from_snapshot computes the leader, which
     // exercises the slot 0 `highest_staked_node()` path.
+    let (stake_pubkeys, vote_pubkeys) = stake_and_vote_pubkeys(&bank.stakes_cache.stakes());
     let new_bank = Bank::new_from_snapshot(
         BankRc {
             accounts: Arc::clone(&bank.rc.accounts),
@@ -13446,12 +13447,8 @@ fn test_new_from_snapshot_uses_rent_from_sysvar() {
         None,
         None,
         bank.load_accounts_data_size(),
-        bank.stakes_cache
-            .stakes()
-            .stake_delegations()
-            .keys()
-            .copied()
-            .collect(),
+        stake_pubkeys,
+        vote_pubkeys,
         epoch_stakes,
     );
 
@@ -13485,6 +13482,7 @@ fn test_new_from_snapshot_hashes_per_tick_changed() {
         .map(|(epoch, stakes)| (epoch, stakes.into()))
         .collect();
 
+    let (stake_pubkeys, vote_pubkeys) = stake_and_vote_pubkeys(&bank.stakes_cache.stakes());
     let new_bank = Bank::new_from_snapshot(
         BankRc {
             accounts: Arc::clone(&bank.rc.accounts),
@@ -13497,12 +13495,8 @@ fn test_new_from_snapshot_hashes_per_tick_changed() {
         None,
         None,
         bank.load_accounts_data_size(),
-        bank.stakes_cache
-            .stakes()
-            .stake_delegations()
-            .keys()
-            .copied()
-            .collect(),
+        stake_pubkeys,
+        vote_pubkeys,
         epoch_stakes,
     );
 
@@ -13674,14 +13668,6 @@ fn test_new_for_txn_tests_system_transfer() {
         );
     }
 
-    let stakes = DeserializableDelegationStakes {
-        vote_accounts: VoteAccounts::default(),
-        stake_delegations: vec![],
-        unused: 0,
-        epoch,
-        stake_history: StakeHistory::default(),
-    };
-
     let fields = BankFieldsToDeserialize {
         blockhash_queue,
         hash: Hash::default(),
@@ -13704,7 +13690,6 @@ fn test_new_for_txn_tests_system_transfer() {
         fee_rate_governor: FeeRateGovernor::default(),
         epoch_schedule: epoch_schedule.clone(),
         inflation: Inflation::default(),
-        stakes,
         versioned_epoch_stakes: vec![],
         is_delta: false,
         accounts_data_len: 0,
@@ -13856,14 +13841,6 @@ fn test_new_for_block_tests_with_vote_account() {
         );
     }
 
-    let stakes_deser = DeserializableDelegationStakes {
-        vote_accounts: VoteAccounts::default(),
-        stake_delegations: vec![],
-        unused: 0,
-        epoch,
-        stake_history: StakeHistory::default(),
-    };
-
     let fields = BankFieldsToDeserialize {
         blockhash_queue,
         hash: Hash::default(),
@@ -13886,7 +13863,6 @@ fn test_new_for_block_tests_with_vote_account() {
         fee_rate_governor: FeeRateGovernor::default(),
         epoch_schedule: epoch_schedule.clone(),
         inflation: Inflation::default(),
-        stakes: stakes_deser,
         versioned_epoch_stakes: vec![],
         is_delta: false,
         accounts_data_len: 0,

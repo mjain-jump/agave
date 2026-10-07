@@ -241,7 +241,6 @@ impl From<DeserializableVersionedBank> for BankFieldsToDeserialize {
             fee_rate_governor: dvb.fee_rate_governor,
             epoch_schedule: dvb.epoch_schedule,
             inflation: dvb.inflation,
-            stakes: dvb.stakes,
             is_delta: dvb.is_delta,
             versioned_epoch_stakes: vec![], // populated from ExtraFieldsToDeserialize
             accounts_lt_hash: AccountsLtHash(LT_HASH_CANARY), // populated from ExtraFieldsToDeserialize
@@ -794,6 +793,7 @@ pub(crate) fn reconstruct_bank_from_fields(
         debug_keys,
         reconstructed_accounts_db_info.accounts_data_len,
         reconstructed_accounts_db_info.stake_pubkeys,
+        reconstructed_accounts_db_info.vote_pubkeys,
         epoch_stakes,
     );
 
@@ -958,6 +958,8 @@ pub struct ReconstructedAccountsDbInfo {
     pub calculated_capitalization: u64,
     /// Stake program accounts found while building the index.
     pub stake_pubkeys: Vec<Pubkey>,
+    /// Vote program accounts found while building the index.
+    pub vote_pubkeys: Vec<Pubkey>,
     pub bank_hash_stats: BankHashStats,
 }
 
@@ -1016,6 +1018,7 @@ fn reconstruct_accountsdb_from_fields(
         calculated_accounts_lt_hash,
         calculated_capitalization,
         stake_pubkeys,
+        vote_pubkeys,
     } = accounts_db.generate_index(limit_load_slot_count_from_snapshot, verify_index);
     info!("Building accounts index... Done in {:?}", start.elapsed());
 
@@ -1026,6 +1029,7 @@ fn reconstruct_accountsdb_from_fields(
             calculated_accounts_lt_hash,
             calculated_capitalization,
             stake_pubkeys,
+            vote_pubkeys,
             bank_hash_stats: snapshot_bank_hash_info.stats,
         },
     ))
