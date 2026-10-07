@@ -5885,7 +5885,6 @@ dependencies = [
  "solana-rayon-threadlimit",
  "solana-rent",
  "solana-reward-info",
- "solana-sdk-ids",
  "solana-signer",
  "solana-slot-hashes",
  "solana-stake-interface",

@@ -5534,11 +5534,21 @@ fn test_bank_hash_consistency(deprecate_rent_exemption_threshold: bool) {
 
 /// The stake and vote pubkeys a snapshot load would collect while building
 /// the accounts index.
-fn stake_and_vote_pubkeys(stakes: &Stakes<StakeAccount<Delegation>>) -> (Vec<Pubkey>, Vec<Pubkey>) {
-    (
-        stakes.stake_delegations().keys().copied().collect(),
-        stakes.vote_accounts().inner().keys().copied().collect(),
-    )
+fn pubkeys_by_owner(
+    stakes: &Stakes<StakeAccount<Delegation>>,
+) -> ahash::HashMap<Pubkey, Vec<Pubkey>> {
+    [
+        (
+            solana_sdk_ids::stake::id(),
+            stakes.stake_delegations().keys().copied().collect(),
+        ),
+        (
+            solana_sdk_ids::vote::id(),
+            stakes.vote_accounts().inner().keys().copied().collect(),
+        ),
+    ]
+    .into_iter()
+    .collect()
 }
 
 /// Tests determinism of a bank hash across snapshot restores and epoch
@@ -5621,13 +5631,11 @@ fn test_bank_hash_deterministic_with_stakes_cache() {
     // additions, and removals.
     let restored_stakes = {
         let stakes = bank0.stakes_cache.stakes();
-        let (stake_pubkeys, vote_pubkeys) = stake_and_vote_pubkeys(&stakes);
         Stakes::load_from_accounts(
             0,
             stakes.history().clone(),
             bank0.new_warmup_cooldown_rate_epoch(),
-            stake_pubkeys,
-            vote_pubkeys,
+            pubkeys_by_owner(&stakes),
             |pubkey| bank0.get_account(pubkey),
         )
     };
@@ -13434,7 +13442,7 @@ fn test_new_from_snapshot_uses_rent_from_sysvar() {
     // Reconstruct bank from corrupted fields.
     // Use `None` to ensure new_from_snapshot computes the leader, which
     // exercises the slot 0 `highest_staked_node()` path.
-    let (stake_pubkeys, vote_pubkeys) = stake_and_vote_pubkeys(&bank.stakes_cache.stakes());
+    let pubkeys_by_owner = pubkeys_by_owner(&bank.stakes_cache.stakes());
     let new_bank = Bank::new_from_snapshot(
         BankRc {
             accounts: Arc::clone(&bank.rc.accounts),
@@ -13447,8 +13455,7 @@ fn test_new_from_snapshot_uses_rent_from_sysvar() {
         None,
         None,
         bank.load_accounts_data_size(),
-        stake_pubkeys,
-        vote_pubkeys,
+        pubkeys_by_owner,
         epoch_stakes,
     );
 
@@ -13482,7 +13489,7 @@ fn test_new_from_snapshot_hashes_per_tick_changed() {
         .map(|(epoch, stakes)| (epoch, stakes.into()))
         .collect();
 
-    let (stake_pubkeys, vote_pubkeys) = stake_and_vote_pubkeys(&bank.stakes_cache.stakes());
+    let pubkeys_by_owner = pubkeys_by_owner(&bank.stakes_cache.stakes());
     let new_bank = Bank::new_from_snapshot(
         BankRc {
             accounts: Arc::clone(&bank.rc.accounts),
@@ -13495,8 +13502,7 @@ fn test_new_from_snapshot_hashes_per_tick_changed() {
         None,
         None,
         bank.load_accounts_data_size(),
-        stake_pubkeys,
-        vote_pubkeys,
+        pubkeys_by_owner,
         epoch_stakes,
     );
 

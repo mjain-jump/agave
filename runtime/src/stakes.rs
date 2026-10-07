@@ -324,23 +324,28 @@ impl Stakes<StakeAccount> {
         }
     }
 
-    /// Builds the stakes cache from accounts-db. `stake_pubkeys` and
-    /// `vote_pubkeys` list the stake and vote program accounts. Accounts
-    /// that are gone, not delegated, or not valid vote accounts are
-    /// skipped, just as `check_and_store` skips them. `get_account` must
-    /// load accounts at the snapshot slot.
+    /// Builds the stakes cache from accounts-db. `pubkeys_by_owner` holds
+    /// the stake and vote program accounts, keyed by owner. Accounts that
+    /// are gone, not delegated, or not valid vote accounts are skipped,
+    /// just as `check_and_store` skips them. `get_account` must load
+    /// accounts at the snapshot slot.
     #[cfg_attr(feature = "dev-context-only-utils", qualifiers(pub))]
     pub(crate) fn load_from_accounts<F>(
         epoch: Epoch,
         stake_history: StakeHistory,
         new_rate_activation_epoch: Option<Epoch>,
-        stake_pubkeys: Vec<Pubkey>,
-        vote_pubkeys: Vec<Pubkey>,
+        mut pubkeys_by_owner: ahash::HashMap<Pubkey, Vec<Pubkey>>,
         get_account: F,
     ) -> Self
     where
         F: Fn(&Pubkey) -> Option<AccountSharedData> + Sync,
     {
+        let stake_pubkeys = pubkeys_by_owner
+            .remove(&stake_program::id())
+            .unwrap_or_default();
+        let vote_pubkeys = pubkeys_by_owner
+            .remove(&solana_vote_program::id())
+            .unwrap_or_default();
         let stake_delegations = stake_pubkeys
             .into_par_iter()
             // We use fold/reduce to aggregate the results, which does a bit more work than calling
@@ -1537,12 +1542,17 @@ pub(crate) mod tests {
             other_pubkey,
             missing_pubkey,
         ];
+        let pubkeys_by_owner = [
+            (stake::program::id(), stake_pubkeys),
+            (solana_vote_program::id(), vec![vote_pubkey]),
+        ]
+        .into_iter()
+        .collect();
         let stakes = Stakes::load_from_accounts(
             0,
             StakeHistory::default(),
             None,
-            stake_pubkeys,
-            vec![vote_pubkey],
+            pubkeys_by_owner,
             get_account,
         );
         assert_eq!(
@@ -1588,12 +1598,17 @@ pub(crate) mod tests {
             other_pubkey,
             missing_pubkey,
         ];
+        let pubkeys_by_owner = [
+            (stake::program::id(), vec![stake_pubkey]),
+            (solana_vote_program::id(), vote_pubkeys),
+        ]
+        .into_iter()
+        .collect();
         let stakes = Stakes::load_from_accounts(
             1,
             stake_history.clone(),
             None,
-            vec![stake_pubkey],
-            vote_pubkeys,
+            pubkeys_by_owner,
             get_account,
         );
         assert_eq!(

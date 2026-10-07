@@ -123,7 +123,7 @@ fn test_generate_index_duplicates_within_slot() {
     let storage = db.get_storage_for_slot(slot0).unwrap();
     let mut reader = crate::append_vec::new_scan_accounts_reader();
     let mut accum = IndexGenerationAccumulator::new();
-    db.generate_index_for_slot(&mut reader, &mut accum, 0, &storage);
+    db.generate_index_for_slot(&mut reader, &mut accum, 0, &storage, &[]);
 }
 
 #[test]
@@ -140,7 +140,7 @@ fn test_generate_index_for_single_ref_zero_lamport_slot() {
     let append_vec = Arc::new(append_vec);
     db.storage.insert(Arc::clone(&append_vec));
     assert!(!db.accounts_index.contains(&pubkey));
-    let result = db.generate_index(None, false);
+    let result = db.generate_index(None, false, &[]);
 
     // The zero-lamport account stays alive in the index; its pubkey is added to
     // `uncleaned_pubkeys` for clean to handle
@@ -166,9 +166,10 @@ fn test_generate_index_for_single_ref_zero_lamport_slot() {
 }
 
 #[test]
-fn test_generate_index_collects_stake_and_vote_pubkeys() {
+fn test_generate_index_collects_pubkeys_by_owner() {
     let db = AccountsDb::new_for_tests_with_config(Vec::new(), DEFAULT_ACCOUNTS_DB_CONFIG);
     let stake_owner = solana_sdk_ids::stake::id();
+    let vote_owner = solana_sdk_ids::vote::id();
     let staked = Pubkey::from([1; 32]);
     let closed = Pubkey::from([2; 32]);
     let other = Pubkey::from([3; 32]);
@@ -176,7 +177,7 @@ fn test_generate_index_collects_stake_and_vote_pubkeys() {
     let stake_account = AccountSharedData::new(1, 0, &stake_owner);
     let closed_account = AccountSharedData::new(0, 0, &stake_owner);
     let other_account = AccountSharedData::new(1, 0, &Pubkey::default());
-    let vote_account = AccountSharedData::new(1, 0, &solana_sdk_ids::vote::id());
+    let vote_account = AccountSharedData::new(1, 0, &vote_owner);
 
     // Write the same accounts in two slots so the lists have repeats.
     let data = [
@@ -191,9 +192,10 @@ fn test_generate_index_collects_stake_and_vote_pubkeys() {
         db.storage.insert(Arc::new(store));
     }
 
-    let result = db.generate_index(None, false);
-    assert_eq!(result.stake_pubkeys, vec![staked]);
-    assert_eq!(result.vote_pubkeys, vec![voter]);
+    let result = db.generate_index(None, false, &[stake_owner, vote_owner]);
+    assert_eq!(result.pubkeys_by_owner.len(), 2);
+    assert_eq!(result.pubkeys_by_owner[&stake_owner], vec![staked]);
+    assert_eq!(result.pubkeys_by_owner[&vote_owner], vec![voter]);
 }
 
 #[test]
@@ -1384,7 +1386,7 @@ fn test_clean_converts_zero_lamport_single_ref_account_to_tombstone_after_shrink
     // Build the index from the storage, the way startup does. Every account gets a single index
     // entry, including the zero lamport ones, and the storage's alive bytes are derived from the
     // accounts it holds. `verify` checks each index entry against the account it points at.
-    accounts_db.generate_index(None, true);
+    accounts_db.generate_index(None, true, &[]);
 
     // index generation does not mark tombstones
     assert_eq!(storage1.num_tombstones(), 0);
@@ -5370,7 +5372,7 @@ fn test_calculate_storage_count_and_alive_bytes() {
     let storage = accounts.storage.get_slot_storage_entry(slot0).unwrap();
     let mut reader = crate::append_vec::new_scan_accounts_reader();
     let mut accum = IndexGenerationAccumulator::new();
-    accounts.generate_index_for_slot(&mut reader, &mut accum, 0, &storage);
+    accounts.generate_index_for_slot(&mut reader, &mut accum, 0, &storage, &[]);
     assert_eq!(storage.num_alive_accounts.load(Ordering::Relaxed), 1);
     let expected_stored_size = storage.accounts.calculate_stored_size(account.data().len());
     assert_eq!(
@@ -5388,7 +5390,7 @@ fn test_calculate_storage_count_and_alive_bytes_0_accounts() {
     let storage = accounts.create_store(0, 1);
     let mut reader = crate::append_vec::new_scan_accounts_reader();
     let mut accum = IndexGenerationAccumulator::new();
-    accounts.generate_index_for_slot(&mut reader, &mut accum, 0, &storage);
+    accounts.generate_index_for_slot(&mut reader, &mut accum, 0, &storage, &[]);
     assert_eq!(storage.num_alive_accounts.load(Ordering::Relaxed), 0);
     assert_eq!(storage.num_alive_bytes.load(Ordering::Relaxed), 0);
     assert_eq!(storage.num_stored_bytes(), 0);
@@ -5425,7 +5427,7 @@ fn test_calculate_storage_count_and_alive_bytes_2_accounts() {
 
     let mut reader = crate::append_vec::new_scan_accounts_reader();
     let mut accum = IndexGenerationAccumulator::new();
-    accounts.generate_index_for_slot(&mut reader, &mut accum, 0, &storage);
+    accounts.generate_index_for_slot(&mut reader, &mut accum, 0, &storage, &[]);
     assert_eq!(storage.num_alive_accounts.load(Ordering::Relaxed), 2);
     let expected_stored_size = storage
         .accounts
@@ -5489,7 +5491,7 @@ fn test_calculate_storage_count_and_alive_bytes_obsolete_account(
 
     let mut reader = crate::append_vec::new_scan_accounts_reader();
     let mut accum = IndexGenerationAccumulator::new();
-    accounts.generate_index_for_slot(&mut reader, &mut accum, 0, &storage);
+    accounts.generate_index_for_slot(&mut reader, &mut accum, 0, &storage, &[]);
     assert_eq!(
         accum.num_obsolete_accounts_skipped,
         num_accounts_to_mark_obsolete as u64

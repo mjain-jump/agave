@@ -123,19 +123,22 @@ pub fn execute_block_proto(context: &ProtoBlockContext) -> ProtoBlockEffects {
 
     // Build the stakes cache the way a snapshot load does: from the stake
     // and vote accounts in the input and the stake history sysvar.
-    let pubkeys_owned_by = |owner: &Pubkey| -> Vec<Pubkey> {
-        accounts_to_store
-            .iter()
-            .filter(|(_, account)| account.lamports() > 0 && account.owner() == owner)
-            .map(|(pubkey, _)| *pubkey)
-            .collect()
-    };
+    let pubkeys_by_owner = [solana_sdk_ids::stake::id(), solana_sdk_ids::vote::id()]
+        .into_iter()
+        .map(|owner| {
+            let pubkeys = accounts_to_store
+                .iter()
+                .filter(|(_, account)| account.lamports() > 0 && *account.owner() == owner)
+                .map(|(pubkey, _)| *pubkey)
+                .collect();
+            (owner, pubkeys)
+        })
+        .collect();
     let stakes_for_cache = Stakes::load_from_accounts(
         parent_epoch,
         stake_history,
         feature_set.new_warmup_cooldown_rate_epoch(&epoch_schedule),
-        pubkeys_owned_by(&solana_sdk_ids::stake::id()),
-        pubkeys_owned_by(&solana_sdk_ids::vote::id()),
+        pubkeys_by_owner,
         |pubkey| {
             accounts_to_store
                 .iter()

@@ -2156,7 +2156,6 @@ impl Bank {
     }
 
     /// Create a bank from explicit arguments and deserialized fields from snapshot
-    #[allow(clippy::too_many_arguments)]
     pub(crate) fn new_from_snapshot(
         bank_rc: BankRc,
         genesis_config: &GenesisConfig,
@@ -2165,8 +2164,7 @@ impl Bank {
         leader_for_tests: Option<SlotLeader>,
         debug_keys: Option<Arc<HashSet<Pubkey>>>,
         accounts_data_size_initial: u64,
-        stake_pubkeys: Vec<Pubkey>,
-        vote_pubkeys: Vec<Pubkey>,
+        pubkeys_by_owner: ahash::HashMap<Pubkey, Vec<Pubkey>>,
         epoch_stakes: HashMap<Epoch, VersionedEpochStakes>,
     ) -> Self {
         let now = Instant::now();
@@ -2205,8 +2203,7 @@ impl Bank {
             epoch,
             stake_history,
             new_rate_activation_epoch,
-            stake_pubkeys,
-            vote_pubkeys,
+            pubkeys_by_owner,
             load_account,
         ));
         info!("Loading Stakes took: {stakes_time}");

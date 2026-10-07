@@ -792,8 +792,7 @@ pub(crate) fn reconstruct_bank_from_fields(
         leader_for_tests,
         debug_keys,
         reconstructed_accounts_db_info.accounts_data_len,
-        reconstructed_accounts_db_info.stake_pubkeys,
-        reconstructed_accounts_db_info.vote_pubkeys,
+        reconstructed_accounts_db_info.pubkeys_by_owner,
         epoch_stakes,
     );
 
@@ -956,10 +955,9 @@ pub struct ReconstructedAccountsDbInfo {
     pub calculated_accounts_lt_hash: AccountsLtHash,
     /// The capitalization, in lamports, calculated during index generation.
     pub calculated_capitalization: u64,
-    /// Stake program accounts found while building the index.
-    pub stake_pubkeys: Vec<Pubkey>,
-    /// Vote program accounts found while building the index.
-    pub vote_pubkeys: Vec<Pubkey>,
+    /// Stake and vote program accounts found while building the index,
+    /// keyed by owner.
+    pub pubkeys_by_owner: ahash::HashMap<Pubkey, Vec<Pubkey>>,
     pub bank_hash_stats: BankHashStats,
 }
 
@@ -1017,9 +1015,12 @@ fn reconstruct_accountsdb_from_fields(
         accounts_data_len,
         calculated_accounts_lt_hash,
         calculated_capitalization,
-        stake_pubkeys,
-        vote_pubkeys,
-    } = accounts_db.generate_index(limit_load_slot_count_from_snapshot, verify_index);
+        pubkeys_by_owner,
+    } = accounts_db.generate_index(
+        limit_load_slot_count_from_snapshot,
+        verify_index,
+        &[solana_sdk_ids::stake::id(), solana_sdk_ids::vote::id()],
+    );
     info!("Building accounts index... Done in {:?}", start.elapsed());
 
     Ok((
@@ -1028,8 +1029,7 @@ fn reconstruct_accountsdb_from_fields(
             accounts_data_len,
             calculated_accounts_lt_hash,
             calculated_capitalization,
-            stake_pubkeys,
-            vote_pubkeys,
+            pubkeys_by_owner,
             bank_hash_stats: snapshot_bank_hash_info.stats,
         },
     ))
